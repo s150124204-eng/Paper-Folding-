@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Spatial Visualization Game - Cover + Badge</title>
+<style>
+    :root {
+        --bg1: #1b2a4a;
+        --bg2: #0b1d3a;
+        --card: rgba(255,255,255,.96);
+        --text-dark: #111;
+        --gold: #ffb703;
+        --soft: rgba(255,255,255,.12);
+        --soft-2: rgba(255,255,255,.18);
+        --good: #4caf50;
+        --bad: #f44336;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+        margin: 0;
+        min-height: 100%;
+        font-family: Arial, sans-serif;
+    }
+
+    body {
+        text-align: center;
+        color: #fff;
+        background: radial-gradient(circle at top, #20355f 0%, var(--bg1) 30%, var(--bg2) 100%);
+        overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+        content: "";
+        position: fixed;
+        inset: auto;
+        width: 220px;
+        height: 220px;
+        border-radius: 50%;
+        filter: blur(8px);
+        opacity: .18;
+        pointer-events: none;
+        z-index: 0;
+        animation: floaty 7s ease-in-out infinite;
+    }
+
+    body::before {
+        left: -70px;
+        top: 120px;
+        background: #9bf6ff;
+    }
+
+    body::after {
+        right: -60px;
+        bottom: 80px;
+        background: #ffb703;
+        animation-delay: -2s;
+    }
+
+    @keyframes floaty {
+        0%, 100% { transform: translateY(0px) translateX(0px) scale(1); }
+        50% { transform: translateY(-18px) translateX(10px) scale(1.06); }
+    }
+
+    .container {
+        position: relative;
+        z-index: 1;
+        width: 92%;
+        max-width: 1020px;
+        margin: 0 auto;
+        padding: 20px 0 28px;
+    }
+
+    .header {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-bottom: 14px;
+        font-weight: 700;
+        align-items: stretch;
+    }
+
+    .header .playerBox,
+    .header .statBox {
+        background: rgba(255,255,255,.10);
+        border: 1px solid rgba(255,255,255,.12);
+        border-radius: 16px;
+        padding: 12px 10px;
+        backdrop-filter: blur(8px);
+        box-shadow: 0 10px 24px rgba(0,0,0,.12);
+    }
+
+    .header .statBox {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .badge {
+        display: inline-block;
+        background: var(--gold);
+        color: #111;
+        padding: 6px 12px;
+        border-radius: 999px;
+        min-width: 72px;
+        box-shadow: 0 6px 16px rgba(0,0,0,.12);
+    }
+
+    .playerNameTag {
+        display: inline-block;
+        max-width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        background: rgba(255,255,255,.92);
+        color: #111;
+        padding: 6px 12px;
+        border-radius: 999px;
+        min-width: 90px;
+        font-weight: 800;
+    }
+
+    #soalBox {
+        background: var(--card);
+        color: var(--text-dark);
+        border-radius: 18px;
+        padding: 16px;
+        margin-bottom: 14px;
+        box-shadow: 0 12px 28px rgba(0,0,0,.18);
+        border: 1px solid rgba(0,0,0,.05);
+    }
+
+    #soalTitle {
+        font-size: 18px;
+        font-weight: 800;
+        margin-bottom: 6px;
+        line-height: 1.35;
+    }
+
+    #levelNote {
+        font-size: 13px;
+        opacity: .82;
+        margin-bottom: 10px;
+    }
+
+    #soal {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow-x: auto;
+        padding: 6px 0 2px;
+    }
+
+    .options {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .option {
+        position: relative;
+        min-height: 230px;
+        border-radius: 18px;
+        padding: 12px 10px 8px;
+        cursor: pointer;
+        background: rgba(255,255,255,.10);
+        border: 2px solid rgba(255,255,255,.16);
+        transition: transform .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+        box-shadow: 0 12px 24px rgba(0,0,0,.12);
+    }
+
+    .option:hover {
+        transform: translateY(-3px) scale(1.01);
+        background: rgba(255,255,255,.16);
+        border-color: rgba(255,255,255,.30);
+    }
+
+    .option.disabled { pointer-events: none; }
+
+    .option.correct {
+        background: rgba(76,175,80,.22) !important;
+        border-color: rgba(76,175,80,.95) !important;
+        box-shadow: 0 0 0 2px rgba(76,175,80,.18) inset, 0 12px 24px rgba(0,0,0,.10);
+    }
+
+    .option.wrong {
+        background: rgba(244,67,54,.18) !important;
+        border-color: rgba(244,67,54,.95) !important;
+        box-shadow: 0 0 0 2px rgba(244,67,54,.14) inset, 0 12px 24px rgba(0,0,0,.10);
+    }
+
+    .option .label {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: rgba(255,255,255,.95);
+        color: #111;
+        border-radius: 999px;
+        padding: 4px 10px;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: .4px;
+    }
+
+    .option .mark {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(0,0,0,.38);
+        color: #fff;
+        border-radius: 999px;
+        padding: 4px 10px;
+        font-size: 12px;
+        font-weight: 800;
+        display: none;
+    }
+
+    .option.correct .mark, .option.wrong .mark { display: inline-block; }
+
+    svg {
+        width: 100%;
+        max-width: 175px;
+        height: auto;
+        display: block;
+    }
+
+    .faceText {
+        font-size: 14px;
+        font-weight: 900;
+        fill: #111;
+        text-anchor: middle;
+        dominant-baseline: middle;
+        pointer-events: none;
+        paint-order: stroke;
+        stroke: rgba(255,255,255,.95);
+        stroke-width: 2px;
+        stroke-linejoin: round;
+    }
+
+    .footerNote {
+        margin-top: 12px;
+        font-size: 13px;
+        opacity: .85;
+    }
+
+    .resultWrap {
+        display: grid;
+        gap: 16px;
+        text-align: left;
+        color: #111;
+    }
+
+    .resultHero {
+        background: linear-gradient(135deg, #ffffff, #f4f7fb);
+        border-radius: 22px;
+        padding: 22px;
+        box-shadow: 0 12px 28px rgba(0,0,0,.18);
+    }
+
+    .resultTitle {
+        font-size: 28px;
+        font-weight: 800;
+        margin: 0 0 6px;
+        color: #0b1d3a;
+    }
+
+    .resultSubtitle {
+        margin: 0 0 16px;
+        color: #445;
+        font-size: 14px;
+    }
+
+    .badgeRow {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .perfBadge {
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: .2px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .perfBadge.fast { background: #e8f7ee; color: #177245; border: 1px solid #bfe9cf; }
+    .perfBadge.accurate { background: #eef4ff; color: #234aa8; border: 1px solid #c9d9ff; }
+    .perfBadge.practice { background: #fff4e5; color: #9a5b00; border: 1px solid #ffd79e; }
+
+    .scoreGrid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .scoreCard {
+        background: #fff;
+        border-radius: 16px;
+        padding: 14px;
+        box-shadow: 0 8px 20px rgba(0,0,0,.08);
+        border: 1px solid rgba(0,0,0,.06);
+    }
+
+    .scoreCard .num {
+        font-size: 26px;
+        font-weight: 800;
+        color: #0b1d3a;
+        line-height: 1.1;
+    }
+
+    .scoreCard .txt {
+        margin-top: 4px;
+        font-size: 12px;
+        color: #556;
+    }
+
+    .levelResultBox {
+        background: #fff;
+        border-radius: 20px;
+        padding: 18px;
+        box-shadow: 0 8px 20px rgba(0,0,0,.08);
+        border: 1px solid rgba(0,0,0,.06);
+    }
+
+    .levelResultBox h3 {
+        margin: 0 0 12px;
+        color: #0b1d3a;
+    }
+
+    .levelRow {
+        display: grid;
+        grid-template-columns: 100px 1fr 80px;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 12px;
+        font-size: 13px;
+    }
+
+    .bar {
+        height: 12px;
+        background: #e9edf3;
+        border-radius: 999px;
+        overflow: hidden;
+    }
+
+    .barFill {
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #4caf50, #73d27c);
+    }
+
+    .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 8px;
+    }
+
+    .btn {
+        border: 0;
+        cursor: pointer;
+        border-radius: 14px;
+        padding: 12px 16px;
+        font-weight: 800;
+        font-size: 14px;
+        transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); filter: brightness(1.02); }
+
+    .btnPrimary {
+        background: linear-gradient(135deg, #ffcf3a, #ffb703);
+        color: #111;
+        box-shadow: 0 10px 20px rgba(255,183,3,.25);
+    }
+
+    .btnSecondary {
+        background: #0b1d3a;
+        color: #fff;
+        box-shadow: 0 10px 20px rgba(11,29,58,.18);
+    }
+
+    .cover {
+        position: fixed;
+        inset: 0;
+        z-index: 999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 22px;
+        background:
+            radial-gradient(circle at top left, rgba(155,246,255,.18), transparent 35%),
+            radial-gradient(circle at bottom right, rgba(255,183,3,.18), transparent 35%),
+            linear-gradient(135deg, #0f1f3d, #132a52 55%, #0a1730 100%);
+    }
+
+    .cover.hidden { display: none; }
+
+    .coverCard {
+        width: min(100%, 900px);
+        background: rgba(255,255,255,.10);
+        border: 1px solid rgba(255,255,255,.16);
+        border-radius: 28px;
+        padding: 26px;
+        box-shadow: 0 18px 50px rgba(0,0,0,.30);
+        backdrop-filter: blur(14px);
+        color: #fff;
+        text-align: left;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .coverCard::before,
+    .coverCard::after {
+        content: "";
+        position: absolute;
+        border-radius: 50%;
+        pointer-events: none;
+        opacity: .32;
+        filter: blur(6px);
+    }
+
+    .coverCard::before {
+        width: 180px;
+        height: 180px;
+        background: #9bf6ff;
+        right: -50px;
+        top: -50px;
+    }
+
+    .coverCard::after {
+        width: 220px;
+        height: 220px;
+        background: #ffb703;
+        left: -80px;
+        bottom: -90px;
+    }
+
+    .coverGrid {
+        display: grid;
+        grid-template-columns: 1.1fr .9fr;
+        gap: 22px;
+        align-items: center;
+        position: relative;
+        z-index: 1;
+    }
+
+    .coverTitle {
+        font-size: clamp(30px, 5vw, 52px);
+        line-height: 1.02;
+        margin: 0 0 10px;
+        font-weight: 900;
+        letter-spacing: -.5px;
+    }
+
+    .coverSub {
+        margin: 0 0 18px;
+        font-size: 15px;
+        line-height: 1.7;
+        color: rgba(255,255,255,.84);
+        max-width: 540px;
+    }
+
+    .fieldRow {
+        display: grid;
+        gap: 12px;
+        max-width: 480px;
+        margin-bottom: 18px;
+    }
+
+    .field {
+        background: rgba(255,255,255,.96);
+        border: 1px solid rgba(255,255,255,.22);
+        border-radius: 16px;
+        padding: 14px 16px;
+        font-size: 15px;
+        color: #111;
+        outline: none;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.7);
+    }
+
+    .field::placeholder { color: #7d8798; }
+
+    .playBtn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        background: linear-gradient(135deg, #ffcf3a, #ffb703);
+        color: #111;
+        border: 0;
+        border-radius: 18px;
+        padding: 15px 20px;
+        font-size: 16px;
+        font-weight: 900;
+        cursor: pointer;
+        box-shadow: 0 14px 30px rgba(255,183,3,.25);
+        transition: transform .18s ease, box-shadow .18s ease;
+    }
+
+    .playBtn:hover {
+        transform: translateY(-2px) scale(1.01);
+        box-shadow: 0 18px 34px rgba(255,183,3,.30);
+    }
+
+    .playBtn .icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255,255,255,.65);
+    }
+
+    .miniInfo {
+        margin-top: 12px;
+        font-size: 13px;
+        color: rgba(255,255,255,.78);
+    }
+
+    .mascot {
+        background: rgba(255,255,255,.08);
+        border: 1px solid rgba(255,255,255,.12);
+        border-radius: 24px;
+        padding: 20px;
+        min-height: 360px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    .mascotBubble {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        background: rgba(255,255,255,.95);
+        color: #0b1d3a;
+        padding: 10px 14px;
+        border-radius: 16px;
+        font-size: 13px;
+        font-weight: 800;
+        max-width: 180px;
+        box-shadow: 0 10px 24px rgba(0,0,0,.12);
+    }
+
+    .floatingChip {
+        position: absolute;
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 800;
+        color: #111;
+        background: rgba(255,255,255,.90);
+        box-shadow: 0 10px 20px rgba(0,0,0,.10);
+        animation: floatChip 4.5s ease-in-out infinite;
+    }
+
+    .chip1 { left: 16px; top: 16px; animation-delay: 0s; }
+    .chip2 { left: 16px; bottom: 16px; animation-delay: -1s; }
+    .chip3 { right: 16px; bottom: 16px; animation-delay: -2s; }
+
+    @keyframes floatChip {
+        0%,100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+    }
+
+    .mascot svg {
+        max-width: 280px;
+        width: 100%;
+    }
+
+    @media (max-width: 860px) {
+        .coverGrid { grid-template-columns: 1fr; }
+        .mascot { min-height: 250px; }
+        .header { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 640px) {
+        .options { grid-template-columns: 1fr 1fr; }
+        .option { min-height: 192px; }
+        #soalTitle { font-size: 16px; }
+        .scoreGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .levelRow { grid-template-columns: 84px 1fr 64px; }
+        .coverCard { padding: 20px; }
+    }
+
+    @media (max-width: 520px) {
+        .header { grid-template-columns: 1fr; }
+        .options { grid-template-columns: 1fr; }
+        .option { min-height: 182px; }
+        .scoreGrid { grid-template-columns: 1fr; }
+        .levelRow { grid-template-columns: 1fr; gap: 6px; }
+        .coverTitle { font-size: 34px; }
+    }
+</style>
+</head>
+<body>
+<div id="cover" class="cover">
+    <div class="coverCard">
+        <div class="coverGrid">
+            <div>
+                <div class="badge" style="margin-bottom:12px; display:inline-block;">Game Mode</div>
+                <h1 class="coverTitle">Spatial<br>Visualization Game</h1>
+                <p class="coverSub">
+                    Masukkan nama dan email dulu, lalu tekan Play untuk mulai menebak jaring-jaring bangun ruang.
+                    Level mudah memakai warna beda tiap sisi, level sedang memakai gradasi abu-abu, dan level susah memakai simbol di tengah sisi.
+                </p>
+
+                <div class="fieldRow">
+                    <input id="playerName" class="field" type="text" placeholder="Nama kamu" maxlength="40" />
+                    <input id="playerEmail" class="field" type="email" placeholder="Email kamu" maxlength="80" />
+                </div>
+
+                <button class="playBtn" onclick="startGame()">
+                    <span class="icon">▶</span>
+                    <span>Play Now</span>
+                </button>
+
+                <div class="miniInfo">Tip: kamu akan lihat skor, level, dan hasil akhir setelah 30 soal selesai.</div>
+            </div>
+
+            <div class="mascot">
+                <div class="mascotBubble">Yuk mulai petualangan ruang bangun! ✨</div>
+                <div class="floatingChip chip1">Cute</div>
+                <div class="floatingChip chip2">Brain Game</div>
+                <div class="floatingChip chip3">Level Up</div>
+                <svg viewBox="0 0 420 360" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#ffcf3a"/>
+                            <stop offset="100%" stop-color="#ffb703"/>
+                        </linearGradient>
+                        <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#9bf6ff"/>
+                            <stop offset="100%" stop-color="#bde0fe"/>
+                        </linearGradient>
+                    </defs>
+                    <circle cx="210" cy="140" r="95" fill="url(#g2)" opacity=".25"/>
+                    <rect x="145" y="95" width="120" height="120" rx="30" fill="#ffffff" opacity=".95"/>
+                    <circle cx="190" cy="140" r="10" fill="#0b1d3a"/>
+                    <circle cx="230" cy="140" r="10" fill="#0b1d3a"/>
+                    <path d="M188 168 Q210 182 232 168" fill="none" stroke="#0b1d3a" stroke-width="7" stroke-linecap="round"/>
+                    <circle cx="165" cy="225" r="26" fill="url(#g1)"/>
+                    <circle cx="255" cy="225" r="26" fill="url(#g1)"/>
+                    <rect x="168" y="208" width="84" height="20" rx="10" fill="#0b1d3a" opacity=".14"/>
+                    <path d="M120 70 L160 55 L150 95 Z" fill="#ffffff" opacity=".8"/>
+                    <path d="M290 55 L330 78 L288 98 Z" fill="#ffffff" opacity=".8"/>
+                    <path d="M95 180 L135 160 L130 205 Z" fill="#ffb703" opacity=".8"/>
+                    <path d="M310 175 L350 155 L345 205 Z" fill="#9bf6ff" opacity=".8"/>
+                    <text x="210" y="312" text-anchor="middle" fill="#ffffff" font-size="26" font-weight="900">Let's Play!</text>
+                </svg>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="game" class="container" style="display:none;">
+    <div class="header">
+        <div class="playerBox">PLAYER: <span id="playerTag" class="playerNameTag">-</span></div>
+        <div class="statBox">LEVEL: <span id="level" class="badge">-</span></div>
+        <div class="statBox">SKOR: <span id="score">0</span></div>
+        <div class="statBox">SOAL: <span id="no">1</span>/<span id="total">30</span></div>
+    </div>
+
+    <div id="soalBox">
+        <div id="soalTitle">Jika jaring-jaring ini dilipat, maka bentuknya seperti apa?</div>
+        <div id="levelNote"></div>
+        <div id="soal"></div>
+    </div>
+
+    <div id="opsi" class="options"></div>
+    <div class="footerNote">Pilih 1 dari 4 opsi. Kunci jawaban akan ditandai setelah dijawab.</div>
+</div>
+
+<script>
+const TOTAL_QUESTIONS = 30;
+const QUESTIONS_PER_LEVEL = 10;
+const SHAPES = ["limas_segiempat", "limas_segitiga", "prisma_segitiga", "kubus", "balok"];
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzw6SdUe4pOQjobZ5oSrZt-tSEPqA0wRJMChrBNjaej8y624jcRoZbuomGkBhQV5EBdpQ/exec";
+
+const LEVELS = {
+    easy:  { key: "easy",   label: "Mudah",  point: 2, note: "Perhatikan jaring-jaring berikut. Tentukan bentuk bangun ruang yang tepat setelah jaring-jaring tersebut dilipat, dengan melihat warna pada tiap sisi." },
+    medium:{ key: "medium", label: "Sedang", point: 3, note: "Perhatikan gambar jaring-jaring bangun ruang berikut. Tentukan bangun ruang yang sesuai dengan hasil lipatan jaring-jaring tersebut. Gunakan perbedaan gradasi warna abu-abu sebagai petunjuk." },
+    hard:  { key: "hard",   label: "Susah",  point: 5, note: "Perhatikan gambar jaring-jaring bangun ruang berikut. Tentukan bangun ruang yang sesuai dengan hasil lipatan jaring-jaring tersebut dengan mencocokkan simbol di tengah sisi." }
+};
+
+const EASY_COLORS = ["#ffadad", "#ffd6a5", "#fdffb6", "#caffbf", "#9bf6ff", "#a0c4ff"];
+const MEDIUM_GREYS = ["#f5f5f5", "#dcdcdc", "#c8c8c8", "#b2b2b2", "#8f8f8f", "#6f6f6f"];
+const SYMBOLS = ["★", "●", "▲", "■", "◆", "✚", "✦", "⬟", "⬢", "⬣"];
+
+let data = [];
+let i = 0;
+let score = 0;
+let locked = false;
+let playerName = "";
+let playerEmail = "";
+let savedToSheet = false;
+
+let stats = {
+    easy: { correct: 0, total: 0 },
+    medium: { correct: 0, total: 0 },
+    hard: { correct: 0, total: 0 }
+};
+
+const GAME_SHELL = document.getElementById("game").innerHTML;
+
+function shuffle(arr) {
+    const copy = [...arr];
+    for (let j = copy.length - 1; j > 0; j--) {
+        const k = Math.floor(Math.random() * (j + 1));
+        [copy[j], copy[k]] = [copy[k], copy[j]];
+    }
+    return copy;
+}
+
+function pickRandom(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function makePack(faceCount, levelKey) {
+    let colors = [];
+    let symbols = [];
+
+    if (levelKey === "easy") {
+        colors = shuffle(EASY_COLORS).slice(0, faceCount);
+    } else if (levelKey === "medium") {
+        colors = shuffle(MEDIUM_GREYS).slice(0, faceCount);
+    } else {
+        colors = shuffle(MEDIUM_GREYS).slice(0, faceCount);
+        symbols = shuffle(SYMBOLS).slice(0, faceCount);
+    }
+
+    return { colors, symbols };
+}
+
+function permutePack(pack, levelKey) {
+    const n = pack.colors.length;
+    const idx = shuffle([...Array(n).keys()]);
+    return {
+        colors: idx.map(i => pack.colors[i]),
+        symbols: levelKey === "hard" ? idx.map(i => pack.symbols[i]) : []
+    };
+}
+
+function faceMark(idx, x, y, pack, showSymbol) {
+    if (!showSymbol) return "";
+    return `<text x="${x}" y="${y}" class="faceText">${pack.symbols[idx] || ""}</text>`;
+}
+
+function buildNet(type, pack, levelKey, variant = 0) {
+    const c = pack.colors;
+    const showSymbol = levelKey === "hard";
+
+    if (type === "kubus") {
+        const svg = variant === 0 ? `
+        <svg viewBox="0 0 210 210">
+            <rect x="85" y="85" width="40" height="40" fill="${c[0]}" stroke="#333" />
+            ${faceMark(0, 105, 105, pack, showSymbol)}
+            <rect x="85" y="45" width="40" height="40" fill="${c[1]}" stroke="#333" />
+            ${faceMark(1, 105, 65, pack, showSymbol)}
+            <rect x="85" y="125" width="40" height="40" fill="${c[2]}" stroke="#333" />
+            ${faceMark(2, 105, 145, pack, showSymbol)}
+            <rect x="45" y="85" width="40" height="40" fill="${c[3]}" stroke="#333" />
+            ${faceMark(3, 65, 105, pack, showSymbol)}
+            <rect x="125" y="85" width="40" height="40" fill="${c[4]}" stroke="#333" />
+            ${faceMark(4, 145, 105, pack, showSymbol)}
+            <rect x="85" y="5" width="40" height="40" fill="${c[5]}" stroke="#333" />
+            ${faceMark(5, 105, 25, pack, showSymbol)}
+        </svg>` : `
+        <svg viewBox="0 0 220 210">
+            <rect x="90" y="85" width="40" height="40" fill="${c[0]}" stroke="#333" />
+            ${faceMark(0, 110, 105, pack, showSymbol)}
+            <rect x="90" y="45" width="40" height="40" fill="${c[1]}" stroke="#333" />
+            ${faceMark(1, 110, 65, pack, showSymbol)}
+            <rect x="90" y="125" width="40" height="40" fill="${c[2]}" stroke="#333" />
+            ${faceMark(2, 110, 145, pack, showSymbol)}
+            <rect x="50" y="85" width="40" height="40" fill="${c[3]}" stroke="#333" />
+            ${faceMark(3, 70, 105, pack, showSymbol)}
+            <rect x="130" y="85" width="40" height="40" fill="${c[4]}" stroke="#333" />
+            ${faceMark(4, 150, 105, pack, showSymbol)}
+            <rect x="90" y="5" width="40" height="40" fill="${c[5]}" stroke="#333" />
+            ${faceMark(5, 110, 25, pack, showSymbol)}
+        </svg>`;
+        return svg;
+    }
+
+    if (type === "balok") {
+        // 2 persegi + 4 persegi panjang
+        const svg = variant === 0 ? `
+        <svg viewBox="0 0 280 220">
+            <rect x="100" y="40" width="60" height="60" fill="${c[0]}" stroke="#333" />
+            ${faceMark(0, 130, 70, pack, showSymbol)}
+
+            <rect x="100" y="100" width="80" height="50" fill="${c[1]}" stroke="#333" />
+            ${faceMark(1, 140, 125, pack, showSymbol)}
+
+            <rect x="20" y="100" width="80" height="50" fill="${c[2]}" stroke="#333" />
+            ${faceMark(2, 60, 125, pack, showSymbol)}
+
+            <rect x="100" y="150" width="80" height="50" fill="${c[3]}" stroke="#333" />
+            ${faceMark(3, 140, 175, pack, showSymbol)}
+
+            <rect x="100" y="0" width="80" height="40" fill="${c[4]}" stroke="#333" />
+            ${faceMark(4, 140, 25, pack, showSymbol)}
+
+            <rect x="180" y="100" width="80" height="50" fill="${c[5]}" stroke="#333" />
+            ${faceMark(5, 220, 125, pack, showSymbol)}
+        </svg>` : `
+        <svg viewBox="0 0 280 220">
+            <rect x="110" y="40" width="60" height="60" fill="${c[0]}" stroke="#333" />
+            ${faceMark(0, 140, 70, pack, showSymbol)}
+
+            <rect x="110" y="100" width="80" height="50" fill="${c[1]}" stroke="#333" />
+            ${faceMark(1, 150, 125, pack, showSymbol)}
+
+            <rect x="30" y="100" width="80" height="50" fill="${c[2]}" stroke="#333" />
+            ${faceMark(2, 70, 125, pack, showSymbol)}
+
+            <rect x="110" y="150" width="80" height="50" fill="${c[3]}" stroke="#333" />
+            ${faceMark(3, 150, 175, pack, showSymbol)}
+
+            <rect x="110" y="0" width="80" height="40" fill="${c[4]}" stroke="#333" />
+            ${faceMark(4, 150, 25, pack, showSymbol)}
+
+            <rect x="190" y="100" width="80" height="50" fill="${c[5]}" stroke="#333" />
+            ${faceMark(5, 230, 125, pack, showSymbol)}
+        </svg>`;
+        return svg;
+    }
+
+    if (type === "limas_segiempat") {
+        const svg = variant === 0 ? `
+        <svg viewBox="0 0 240 220">
+            <polygon points="80,85 140,85 140,145 80,145" fill="${c[0]}" stroke="#333" />
+            ${faceMark(0, 110, 117, pack, showSymbol)}
+            <polygon points="80,85 140,85 110,30" fill="${c[1]}" stroke="#333" />
+            ${faceMark(1, 110, 62, pack, showSymbol)}
+            <polygon points="140,85 140,145 195,115" fill="${c[2]}" stroke="#333" />
+            ${faceMark(2, 162, 115, pack, showSymbol)}
+            <polygon points="80,145 140,145 110,195" fill="${c[3]}" stroke="#333" />
+            ${faceMark(3, 110, 167, pack, showSymbol)}
+            <polygon points="80,85 80,145 25,115" fill="${c[4]}" stroke="#333" />
+            ${faceMark(4, 48, 115, pack, showSymbol)}
+        </svg>` : `
+        <svg viewBox="0 0 240 220">
+            <polygon points="82,87 142,87 142,147 82,147" fill="${c[0]}" stroke="#333" />
+            ${faceMark(0, 112, 119, pack, showSymbol)}
+            <polygon points="82,87 142,87 112,32" fill="${c[1]}" stroke="#333" />
+            ${faceMark(1, 112, 64, pack, showSymbol)}
+            <polygon points="142,87 142,147 197,117" fill="${c[2]}" stroke="#333" />
+            ${faceMark(2, 164, 117, pack, showSymbol)}
+            <polygon points="82,147 142,147 112,197" fill="${c[3]}" stroke="#333" />
+            ${faceMark(3, 112, 169, pack, showSymbol)}
+            <polygon points="82,87 82,147 27,117" fill="${c[4]}" stroke="#333" />
+            ${faceMark(4, 50, 117, pack, showSymbol)}
+        </svg>`;
+        return svg;
+    }
+
+    if (type === "limas_segitiga") {
+        const svg = variant === 0 ? `
+        <svg viewBox="0 0 240 220">
+            <polygon points="120,30 170,110 70,110" fill="${c[0]}" stroke="#333" />
+            ${faceMark(0, 120, 84, pack, showSymbol)}
+            <polygon points="120,30 70,110 110,175" fill="${c[1]}" stroke="#333" />
+            ${faceMark(1, 96, 112, pack, showSymbol)}
+            <polygon points="120,30 170,110 140,175" fill="${c[2]}" stroke="#333" />
+            ${faceMark(2, 148, 112, pack, showSymbol)}
+            <polygon points="70,110 170,110 125,195" fill="${c[3]}" stroke="#333" />
+            ${faceMark(3, 120, 145, pack, showSymbol)}
+        </svg>` : `
+        <svg viewBox="0 0 240 220">
+            <polygon points="120,32 170,112 70,112" fill="${c[0]}" stroke="#333" />
+            ${faceMark(0, 120, 86, pack, showSymbol)}
+            <polygon points="120,32 70,112 112,178" fill="${c[1]}" stroke="#333" />
+            ${faceMark(1, 98, 114, pack, showSymbol)}
+            <polygon points="120,32 170,112 142,178" fill="${c[2]}" stroke="#333" />
+            ${faceMark(2, 150, 114, pack, showSymbol)}
+            <polygon points="70,112 170,112 125,196" fill="${c[3]}" stroke="#333" />
+            ${faceMark(3, 120, 147, pack, showSymbol)}
+        </svg>`;
+        return svg;
+    }
+
+    if (type === "prisma_segitiga") {
+        const svg = variant === 0 ? `
+        <svg viewBox="0 0 260 220">
+            <polygon points="45,125 90,70 90,175" fill="${c[0]}" stroke="#333" />
+            ${faceMark(0, 78, 132, pack, showSymbol)}
+            <polygon points="145,125 190,70 190,175" fill="${c[1]}" stroke="#333" />
+            ${faceMark(1, 178, 132, pack, showSymbol)}
+            <polygon points="45,125 145,125 190,70 90,70" fill="${c[2]}" stroke="#333" />
+            ${faceMark(2, 122, 108, pack, showSymbol)}
+            <polygon points="45,125 145,125 190,175 90,175" fill="${c[3]}" stroke="#333" />
+            ${faceMark(3, 122, 168, pack, showSymbol)}
+            <polygon points="90,70 190,70 190,175 90,175" fill="${c[4]}" stroke="#333" />
+            ${faceMark(4, 140, 132, pack, showSymbol)}
+        </svg>` : `
+        <svg viewBox="0 0 260 220">
+            <polygon points="50,125 95,70 95,175" fill="${c[0]}" stroke="#333" />
+            ${faceMark(0, 82, 132, pack, showSymbol)}
+            <polygon points="150,125 195,70 195,175" fill="${c[1]}" stroke="#333" />
+            ${faceMark(1, 183, 132, pack, showSymbol)}
+            <polygon points="50,125 150,125 195,70 95,70" fill="${c[2]}" stroke="#333" />
+            ${faceMark(2, 125, 108, pack, showSymbol)}
+            <polygon points="50,125 150,125 195,175 95,175" fill="${c[3]}" stroke="#333" />
+            ${faceMark(3, 125, 168, pack, showSymbol)}
+            <polygon points="95,70 195,70 195,175 95,175" fill="${c[4]}" stroke="#333" />
+            ${faceMark(4, 145, 132, pack, showSymbol)}
+        </svg>`;
+        return svg;
+    }
+
+    return "";
+}
+
+function buildShape(type, pack, levelKey, variant = 0) {
+    const c = pack.colors;
+    const showSymbol = levelKey === "hard";
+
+    if (type === "kubus") {
+        const svg = variant === 0 ? `
+        <svg viewBox="0 0 160 160">
+            <polygon points="55,18 95,38 55,58 15,38" fill="${c[1]}" stroke="#333" />
+            ${faceMark(1, 55, 38, pack, showSymbol)}
+            <polygon points="55,58 95,38 95,78 55,98" fill="${c[0]}" stroke="#333" />
+            ${faceMark(0, 78, 68, pack, showSymbol)}
+            <polygon points="55,58 15,38 15,78 55,98" fill="${c[3]}" stroke="#333" />
+            ${faceMark(3, 33, 68, pack, showSymbol)}
+            <polygon points="95,38 135,58 135,98 95,78" fill="${c[4]}" stroke="#333" />
+            ${faceMark(4, 115, 68, pack, showSymbol)}
+        </svg>` : `
+        <svg viewBox="0 0 160 160">
+            <polygon points="58,18 98,38 58,58 18,38" fill="${c[1]}" stroke="#333" />
+            ${faceMark(1, 58, 38, pack, showSymbol)}
+            <polygon points="58,58 98,38 98,78 58,98" fill="${c[0]}" stroke="#333" />
+            ${faceMark(0, 81, 68, pack, showSymbol)}
+            <polygon points="58,58 18,38 18,78 58,98" fill="${c[3]}" stroke="#333" />
+            ${faceMark(3, 36, 68, pack, showSymbol)}
+            <polygon points="98,38 138,58 138,98 98,78" fill="${c[4]}" stroke="#333" />
+            ${faceMark(4, 118, 68, pack, showSymbol)}
+        </svg>`;
+        return svg;
+    }
+
+    if (type === "balok") {
+        const svg = variant === 0 ? `
+        <svg viewBox="0 0 170 150">
+            <polygon points="40,20 110,40 80,60 10,40" fill="${c[1]}" stroke="#333" />
+            ${faceMark(1, 68, 40, pack, showSymbol)}
+            <polygon points="80,60 110,40 110,80 80,100" fill="${c[0]}" stroke="#333" />
+            ${faceMark(0, 96, 70, pack, showSymbol)}
+            <polygon points="80,60 10,40 10,80 80,100" fill="${c[3]}" stroke="#333" />
+            ${faceMark(3, 42, 70, pack, showSymbol)}
+            <polygon points="110,40 140,55 140,95 110,80" fill="${c[4]}" stroke="#333" />
+            ${faceMark(4, 128, 70, pack, showSymbol)}
+        </svg>` : `
+        <svg viewBox="0 0 170 150">
+            <polygon points="42,20 112,40 82,60 12,40" fill="${c[1]}" stroke="#333" />
+            ${faceMark(1, 70, 40, pack, showSymbol)}
+            <polygon points="82,60 112,40 112,80 82,100" fill="${c[0]}" stroke="#333" />
+            ${faceMark(0, 98, 70, pack, showSymbol)}
+            <polygon points="82,60 12,40 12,80 82,100" fill="${c[3]}" stroke="#333" />
+            ${faceMark(3, 44, 70, pack, showSymbol)}
+            <polygon points="112,40 142,55 142,95 112,80" fill="${c[4]}" stroke="#333" />
+            ${faceMark(4, 130, 70, pack, showSymbol)}
+        </svg>`;
+        return svg;
+    }
+
+    if (type === "limas_segiempat") {
+        const svg = variant === 0 ? `
+        <svg viewBox="0 0 170 170">
+            <polygon points="55,85 95,105 55,125 15,105" fill="${c[0]}" stroke="#333" />
+            ${faceMark(0, 55, 105, pack, showSymbol)}
+            <polygon points="55,85 95,105 70,45" fill="${c[1]}" stroke="#333" />
+            ${faceMark(1, 74, 83, pack, showSymbol)}
+            <polygon points="95,105 95,145 130,123" fill="${c[2]}" stroke="#333" />
+            ${faceMark(2, 108, 123, pack, showSymbol)}
+            <polygon points="55,125 95,145 70,155" fill="${c[3]}" stroke="#333" />
+            ${faceMark(3, 74, 142, pack, showSymbol)}
+            <polygon points="15,105 55,125 30,123" fill="${c[4]}" stroke="#333" />
+            ${faceMark(4, 34, 123, pack, showSymbol)}
+        </svg>` : `
+        <svg viewBox="0 0 170 170">
+            <polygon points="57,87 97,107 57,127 17,107" fill="${c[0]}" stroke="#333" />
+            ${faceMark(0, 57, 107, pack, showSymbol)}
+            <polygon points="57,87 97,107 72,47" fill="${c[1]}" stroke="#333" />
+            ${faceMark(1, 76, 85, pack, showSymbol)}
+            <polygon points="97,107 97,147 132,125" fill="${c[2]}" stroke="#333" />
+            ${faceMark(2, 110, 125, pack, showSymbol)}
+            <polygon points="57,127 97,147 72,157" fill="${c[3]}" stroke="#333" />
+            ${faceMark(3, 76, 144, pack, showSymbol)}
+            <polygon points="17,107 57,127 32,125" fill="${c[4]}" stroke="#333" />
+            ${faceMark(4, 36, 125, pack, showSymbol)}
+        </svg>`;
+        return svg;
+    }
+
+    if (type === "limas_segitiga") {
+        const svg = variant === 0 ? `
+        <svg viewBox="0 0 170 170">
+            <polygon points="85,18 125,80 65,80" fill="${c[0]}" stroke="#333" />
+            ${faceMark(0, 92, 58, pack, showSymbol)}
+            <polygon points="85,18 65,80 95,135" fill="${c[1]}" stroke="#333" />
+            ${faceMark(1, 76, 92, pack, showSymbol)}
+            <polygon points="85,18 125,80 105,135" fill="${c[2]}" stroke="#333" />
+            ${faceMark(2, 111, 92, pack, showSymbol)}
+            <polygon points="65,80 125,80 100,150" fill="${c[3]}" stroke="#333" />
+            ${faceMark(3, 95, 116, pack, showSymbol)}
+        </svg>` : `
+        <svg viewBox="0 0 170 170">
+            <polygon points="85,20 125,82 65,82" fill="${c[0]}" stroke="#333" />
+            ${faceMark(0, 92, 60, pack, showSymbol)}
+            <polygon points="85,20 65,82 95,137" fill="${c[1]}" stroke="#333" />
+            ${faceMark(1, 76, 94, pack, showSymbol)}
+            <polygon points="85,20 125,82 105,137" fill="${c[2]}" stroke="#333" />
+            ${faceMark(2, 111, 94, pack, showSymbol)}
+            <polygon points="65,82 125,82 100,152" fill="${c[3]}" stroke="#333" />
+            ${faceMark(3, 95, 118, pack, showSymbol)}
+        </svg>`;
+        return svg;
+    }
+
+    if (type === "prisma_segitiga") {
+        const svg = variant === 0 ? `
+        <svg viewBox="0 0 190 170">
+            <polygon points="32,112 62,72 62,142" fill="${c[0]}" stroke="#333" />
+            ${faceMark(0, 52, 116, pack, showSymbol)}
+            <polygon points="108,112 138,72 138,142" fill="${c[1]}" stroke="#333" />
+            ${faceMark(1, 128, 116, pack, showSymbol)}
+            <polygon points="32,112 108,112 138,72 62,72" fill="${c[2]}" stroke="#333" />
+            ${faceMark(2, 92, 94, pack, showSymbol)}
+            <polygon points="32,112 108,112 138,142 62,142" fill="${c[3]}" stroke="#333" />
+            ${faceMark(3, 92, 136, pack, showSymbol)}
+            <polygon points="62,72 138,72 138,142 62,142" fill="${c[4]}" stroke="#333" />
+            ${faceMark(4, 100, 116, pack, showSymbol)}
+        </svg>` : `
+        <svg viewBox="0 0 190 170">
+            <polygon points="34,112 64,72 64,142" fill="${c[0]}" stroke="#333" />
+            ${faceMark(0, 54, 116, pack, showSymbol)}
+            <polygon points="110,112 140,72 140,142" fill="${c[1]}" stroke="#333" />
+            ${faceMark(1, 130, 116, pack, showSymbol)}
+            <polygon points="34,112 110,112 140,72 64,72" fill="${c[2]}" stroke="#333" />
+            ${faceMark(2, 94, 94, pack, showSymbol)}
+            <polygon points="34,112 110,112 140,142 64,142" fill="${c[3]}" stroke="#333" />
+            ${faceMark(3, 94, 136, pack, showSymbol)}
+            <polygon points="64,72 140,72 140,142 64,142" fill="${c[4]}" stroke="#333" />
+            ${faceMark(4, 102, 116, pack, showSymbol)}
+        </svg>`;
+        return svg;
+    }
+
+    return "";
+}
+
+function makeQuestion(levelKey, type) {
+    const level = LEVELS[levelKey];
+    const faceCount = type === "limas_segitiga" ? 4 : 5; // sesuai bentuk net yang ditampilkan
+    const correctPack = makePack(faceCount, levelKey);
+
+    const soal = buildNet(type, correctPack, levelKey, Math.random() < 0.5 ? 0 : 1);
+    const correct = buildShape(type, correctPack, levelKey, 0);
+
+    const options = [correct];
+    const seen = new Set([correct]);
+
+    while (options.length < 4) {
+        const wrongPack = permutePack(correctPack, levelKey);
+        const wrong = buildShape(type, wrongPack, levelKey, 0);
+        if (!seen.has(wrong)) {
+            seen.add(wrong);
+            options.push(wrong);
+        }
+    }
+
+    const shuffled = shuffle(options);
+
+    return {
+        levelKey,
+        shapeType: type,
+        levelLabel: level.label,
+        point: level.point,
+        note: level.note,
+        soal,
+        opsi: shuffled,
+        jawaban: shuffled.indexOf(correct)
+    };
+}
+
+function buildQuestionSet() {
+    const levelOrder = ["easy", "medium", "hard"];
+    const levelBuckets = [];
+
+    for (const levelKey of levelOrder) {
+        const bucket = [];
+        for (const type of SHAPES) {
+            bucket.push(makeQuestion(levelKey, type));
+            bucket.push(makeQuestion(levelKey, type));
+        }
+        levelBuckets.push(...shuffle(bucket));
+    }
+
+    return levelBuckets;
+}
+
+function percent(n, d) {
+    if (!d) return 0;
+    return Math.round((n / d) * 100);
+}
+
+function getPerformanceBadge(acc, totalCorrect) {
+    if (acc >= 90 && totalCorrect >= 24) {
+        return { cls: "fast", title: "Sangat Cepat", desc: "Akurasi tinggi dan hasil sangat kuat." };
+    }
+    if (acc >= 70) {
+        return { cls: "accurate", title: "Akurat", desc: "Jawabanmu cukup stabil dan tepat." };
+    }
+    return { cls: "practice", title: "Perlu Latihan", desc: "Tetap bagus, tinggal diperkuat lagi." };
+}
+
+function sendResultToSheet() {
+    if (savedToSheet) return;
+    savedToSheet = true;
+
+    const totalAnswered = Object.values(stats).reduce((a, b) => a + b.total, 0);
+    const totalCorrect = Object.values(stats).reduce((a, b) => a + b.correct, 0);
+    const totalWrong = totalAnswered - totalCorrect;
+    const acc = percent(totalCorrect, totalAnswered);
+    const maxScore = 10 * LEVELS.easy.point + 10 * LEVELS.medium.point + 10 * LEVELS.hard.point;
+    const badge = getPerformanceBadge(acc, totalCorrect);
+
+    const payload = {
+        playerName,
+        playerEmail,
+        score,
+        accuracy: acc,
+        totalCorrect,
+        totalWrong,
+        totalAnswered,
+        maxScore,
+        badgeTitle: badge.title,
+        badgeDesc: badge.desc,
+        easyCorrect: stats.easy.correct,
+        easyTotal: stats.easy.total,
+        mediumCorrect: stats.medium.correct,
+        mediumTotal: stats.medium.total,
+        hardCorrect: stats.hard.correct,
+        hardTotal: stats.hard.total,
+        levelStats: stats
+    };
+
+    fetch(WEB_APP_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify(payload)
+    }).catch(err => {
+        console.log("Gagal kirim ke Sheet:", err);
+    });
+}
+
+function renderResult() {
+    const totalAnswered = Object.values(stats).reduce((a, b) => a + b.total, 0);
+    const totalCorrect = Object.values(stats).reduce((a, b) => a + b.correct, 0);
+    const totalWrong = totalAnswered - totalCorrect;
+    const acc = percent(totalCorrect, totalAnswered);
+    const maxScore = 10 * LEVELS.easy.point + 10 * LEVELS.medium.point + 10 * LEVELS.hard.point;
+    const badge = getPerformanceBadge(acc, totalCorrect);
+
+    const levelRows = Object.values(LEVELS).map(l => {
+        const s = stats[l.key];
+        const p = percent(s.correct, s.total);
+        return `
+            <div class="levelRow">
+                <div><strong>${l.label}</strong></div>
+                <div class="bar"><div class="barFill" style="width:${p}%"></div></div>
+                <div style="text-align:right;"><strong>${s.correct}/${s.total}</strong></div>
+            </div>
+        `;
+    }).join("");
+
+    document.getElementById("game").innerHTML = `
+        <div class="resultWrap">
+            <div class="resultHero">
+                <h1 class="resultTitle">Hasil Akhir</h1>
+                <p class="resultSubtitle">Permainan selesai. Berikut ringkasan hasil pengerjaan ${playerName || "kamu"}.</p>
+
+                <div class="badgeRow">
+                    <div class="perfBadge ${badge.cls}">${badge.title}</div>
+                    <div class="perfBadge accurate">Akurasi ${acc}%</div>
+                </div>
+                <div style="margin-top:-4px; margin-bottom:16px; color:#445; font-size:13px;">${badge.desc}</div>
+
+                <div class="scoreGrid">
+                    <div class="scoreCard">
+                        <div class="num">${score}</div>
+                        <div class="txt">Skor diperoleh</div>
+                    </div>
+                    <div class="scoreCard">
+                        <div class="num">${acc}%</div>
+                        <div class="txt">Akurasi</div>
+                    </div>
+                    <div class="scoreCard">
+                        <div class="num">${totalCorrect}</div>
+                        <div class="txt">Jawaban benar</div>
+                    </div>
+                    <div class="scoreCard">
+                        <div class="num">${totalWrong}</div>
+                        <div class="txt">Jawaban salah</div>
+                    </div>
+                </div>
+
+                <div style="margin-top:14px; font-size:13px; color:#445;">
+                    Skor maksimum: <strong>${maxScore}</strong> | Soal terjawab: <strong>${totalAnswered}</strong>
+                </div>
+
+                <div class="actions">
+                    <button class="btn btnPrimary" onclick="restartGame()">Main lagi</button>
+                    <button class="btn btnSecondary" onclick="window.scrollTo({top:0, behavior:'smooth'})">Kembali ke atas</button>
+                </div>
+            </div>
+
+            <div class="levelResultBox">
+                <h3>Ringkasan per level</h3>
+                ${levelRows}
+            </div>
+        </div>
+    `;
+
+    setTimeout(sendResultToSheet, 300);
+}
+
+function restartGame() {
+    document.getElementById("game").innerHTML = GAME_SHELL;
+    document.getElementById("game").style.display = "block";
+
+    data = buildQuestionSet();
+    i = 0;
+    score = 0;
+    locked = false;
+    savedToSheet = false;
+    stats = {
+        easy: { correct: 0, total: 0 },
+        medium: { correct: 0, total: 0 },
+        hard: { correct: 0, total: 0 }
+    };
+    document.getElementById("total").innerText = data.length;
+    render();
+}
+
+function render() {
+    locked = false;
+
+    if (i >= data.length) {
+        renderResult();
+        return;
+    }
+
+    const d = data[i];
+    document.getElementById("level").innerText = d.levelLabel;
+    document.getElementById("no").innerText = i + 1;
+    document.getElementById("soal").innerHTML = d.soal;
+    document.getElementById("levelNote").innerText = d.note;
+    document.getElementById("score").innerText = score;
+    document.getElementById("total").innerText = data.length;
+
+    document.getElementById("opsi").innerHTML = d.opsi.map((o, idx) => `
+        <div class="option" onclick="cek(${idx}, this)">
+            <div class="label">Opsi ${idx + 1}</div>
+            <div class="mark">Pilih</div>
+            ${o}
+        </div>
+    `).join("");
+}
+
+function cek(idx, el) {
+    if (locked) return;
+    locked = true;
+
+    const d = data[i];
+    const all = document.querySelectorAll(".option");
+    all.forEach(x => x.classList.add("disabled"));
+
+    stats[d.levelKey].total += 1;
+
+    if (idx === d.jawaban) {
+        el.classList.add("correct");
+        const mark = el.querySelector(".mark");
+        if (mark) mark.innerText = "Benar";
+        score += d.point;
+        stats[d.levelKey].correct += 1;
+    } else {
+        el.classList.add("wrong");
+        const mark = el.querySelector(".mark");
+        if (mark) mark.innerText = "Salah";
+
+        if (all[d.jawaban]) {
+            all[d.jawaban].classList.add("correct");
+            const kunci = all[d.jawaban].querySelector(".mark");
+            if (kunci) kunci.innerText = "Kunci";
+        }
+    }
+
+    document.getElementById("score").innerText = score;
+    setTimeout(() => { i++; render(); }, 850);
+}
+
+function startGame() {
+    const nameInput = document.getElementById("playerName");
+    const emailInput = document.getElementById("playerEmail");
+
+    playerName = (nameInput.value || "").trim();
+    playerEmail = (emailInput.value || "").trim();
+
+    if (!playerName) {
+        nameInput.focus();
+        nameInput.style.boxShadow = "0 0 0 3px rgba(255,183,3,.35)";
+        setTimeout(() => { nameInput.style.boxShadow = ""; }, 1200);
+        return;
+    }
+
+    document.getElementById("game").innerHTML = GAME_SHELL;
+    document.getElementById("game").style.display = "block";
+
+    data = buildQuestionSet();
+    savedToSheet = false;
+    document.getElementById("playerTag").innerText = playerName;
+    document.getElementById("cover").classList.add("hidden");
+    document.getElementById("total").innerText = data.length;
+    render();
+}
+</script>
+</body>
+</html>
