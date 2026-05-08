@@ -594,14 +594,6 @@
       min-height: 18px;
     }
 
-    .screenReaderOnly {
-      position: absolute;
-      left: -9999px;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-    }
-
     @media (max-width: 860px) {
       .coverGrid { grid-template-columns: 1fr; }
       .mascot { min-height: 250px; }
@@ -709,7 +701,6 @@
   <script>
     'use strict';
 
-    // === KONFIGURASI ===
     const TOTAL_QUESTIONS = 30;
     const SHAPES = ["limas_segiempat", "limas_segitiga", "prisma_segitiga", "kubus", "balok"];
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzw6SdUe4pOQjobZ5oSrZt-tSEPqA0wRJMChrBNjaej8y624jcRoZbuomGkBhQV5EBdpQ/exec";
@@ -739,7 +730,6 @@
     const MEDIUM_GREYS = ["#f5f5f5", "#dcdcdc", "#c8c8c8", "#b2b2b2", "#8f8f8f", "#6f6f6f"];
     const SYMBOLS = ["★", "●", "▲", "■", "◆", "✚", "✦", "⬟", "⬢", "⬣"];
 
-    // === STATE ===
     let data = [];
     let i = 0;
     let score = 0;
@@ -758,7 +748,6 @@
     const coverEl = document.getElementById("cover");
     const errorHintEl = document.getElementById("errorHint");
 
-    // === UTILITIES ===
     function shuffle(arr) {
       const copy = [...arr];
       for (let j = copy.length - 1; j > 0; j--) {
@@ -1154,7 +1143,7 @@
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
+        .replaceAll("\"", "&quot;")
         .replaceAll("'", "&#39;");
     }
 
@@ -1412,7 +1401,6 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
-    // === EVENTS ===
     document.getElementById("playBtn").addEventListener("click", startGame);
     document.getElementById("playerName").addEventListener("keydown", (e) => {
       if (e.key === "Enter") startGame();
@@ -1421,7 +1409,6 @@
       if (e.key === "Enter") startGame();
     });
 
-    // === INIT ===
     resetState();
     document.getElementById("total").innerText = TOTAL_QUESTIONS;
   </script>
